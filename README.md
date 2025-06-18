@@ -14,7 +14,7 @@
 
 1. Скачайте скрипт установки:
 ```bash
-wget https://raw.githubusercontent.com/your-username/rfid-reader/main/install.sh
+wget https://raw.githubusercontent.com/snak84/rfid-reader/main/install.sh
 ```
 
 2. Запустите скрипт установки:
@@ -23,14 +23,11 @@ sudo chmod +x install.sh
 sudo ./install.sh
 ```
 
-Во время установки вам будет предложено:
-- Выбрать путь для установки (по умолчанию /opt/rfid-reader)
-- Указать пользователя для запуска сервиса (по умолчанию текущий пользователь)
-
 Скрипт установки выполнит следующие действия:
 - Клонирует репозиторий
 - Создаст необходимые директории
 - Установит зависимости Python
+- Запросит настройки MySQL (хост, пользователь, пароль, имя базы данных)
 - Создаст пользователя базы данных
 - Настроит systemd сервис
 - Создаст конфигурационный файл
@@ -39,13 +36,30 @@ sudo ./install.sh
 
 После установки отредактируйте файл конфигурации:
 ```bash
-sudo nano /opt/rfid-reader/.env  # или путь, который вы указали при установке
+sudo nano .env  # файл находится в текущей директории
 ```
 
 Установите правильные значения для:
 - Параметров базы данных
 - GPIO пинов
 - Путей к логам
+
+Пример содержимого .env:
+```
+# Database configuration
+DB_HOST=localhost
+DB_USER=rfid_reader
+DB_PASSWORD=your_password
+DB_NAME=rfid_cards
+
+# GPIO configuration
+DATA0_PIN=24
+DATA1_PIN=23
+
+# Logging configuration
+LOG_DIR=./logs
+PID_FILE=/var/run/rfid-reader.pid
+```
 
 ## Использование
 

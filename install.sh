@@ -19,15 +19,45 @@ print_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
+# Проверка и установка Python3
+if ! command -v python3 &> /dev/null; then
+    print_message "Установка Python3..."
+    apt-get update && apt-get install -y python3 || {
+        print_error "Ошибка при установке Python3"
+        exit 1
+    }
+fi
+
+# Установка pip3, если он не установлен
+if ! command -v pip3 &> /dev/null; then
+    print_message "Установка pip3..."
+    apt-get update && apt-get install -y python3-pip || {
+        print_error "Ошибка при установке pip3"
+        exit 1
+    }
+fi
+
+# Установка MySQL, если он не установлен
+if ! command -v mysql &> /dev/null; then
+    print_message "Установка MySQL..."
+    apt-get update && apt-get install -y mysql-server || {
+        print_error "Ошибка при установке MySQL"
+        exit 1
+    }
+fi
+
+# Установка Git, если он не установлен
+if ! command -v git &> /dev/null; then
+    print_message "Установка Git..."
+    apt-get update && apt-get install -y git || {
+        print_error "Ошибка при установке Git"
+        exit 1
+    }
+fi
+
 # Проверка прав root
 if [ "$EUID" -ne 0 ]; then
     print_error "Этот скрипт должен быть запущен с правами root"
-    exit 1
-fi
-
-# Проверка наличия Python3
-if ! command -v python3 &> /dev/null; then
-    print_error "Python3 не установлен"
     exit 1
 fi
 
@@ -39,7 +69,7 @@ fi
 
 # Определение пути установки и пользователя
 INSTALL_DIR=$(pwd)
-SERVICE_USER=$SUDO_USER
+SERVICE_USER=${SUDO_USER:-$USER}
 
 # Проверка существования пользователя
 if ! id "$SERVICE_USER" &>/dev/null; then
@@ -57,7 +87,7 @@ print_message "Клонирование репозитория..."
 if [ -d "$INSTALL_DIR/.git" ]; then
     print_warning "Директория уже содержит git репозиторий, пропускаем клонирование"
 else
-    git clone https://github.com/your-username/rfid-reader.git "$INSTALL_DIR" || {
+    git clone https://github.com/snak84/rfid-reader.git "$INSTALL_DIR" || {
         print_error "Ошибка при клонировании репозитория"
         exit 1
     }
@@ -78,7 +108,24 @@ chown "$SERVICE_USER:$SERVICE_USER" /var/run/rfid-reader.pid
 
 # Установка зависимостей
 print_message "Установка Python зависимостей..."
-pip3 install -r "$INSTALL_DIR/requirements.txt"
+if ! command -v python3 -m venv &> /dev/null; then
+    print_message "Установка python3-venv..."
+    apt-get update && apt-get install -y python3-venv || {
+        print_error "Ошибка при установке python3-venv"
+        exit 1
+    }
+fi
+
+# Создание и активация виртуального окружения
+print_message "Создание виртуального окружения..."
+python3 -m venv "$INSTALL_DIR/venv"
+source "$INSTALL_DIR/venv/bin/activate"
+
+# Установка зависимостей в виртуальное окружение
+pip install -r "$INSTALL_DIR/requirements.txt"
+
+# Деактивация виртуального окружения
+deactivate
 
 # Запрос настроек MySQL
 read -p "Введите хост MySQL (по умолчанию localhost): " DB_HOST
