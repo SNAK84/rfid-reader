@@ -61,12 +61,6 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Проверка наличия pip3
-if ! command -v pip3 &> /dev/null; then
-    print_error "pip3 не установлен"
-    exit 1
-fi
-
 # Определение пути установки и пользователя
 INSTALL_DIR=$(pwd)
 SERVICE_USER=${SUDO_USER:-$USER}
@@ -131,30 +125,15 @@ chmod -R 755 "$INSTALL_DIR"
 touch /var/run/rfid-reader.pid
 chown "$SERVICE_USER:$SERVICE_USER" /var/run/rfid-reader.pid
 
-# Установка зависимостей
-print_message "Установка Python зависимостей..."
-if ! command -v python3 -m venv &> /dev/null; then
-    print_message "Установка python3-venv..."
-    apt-get update && apt-get install -y python3-venv || {
-        print_error "Ошибка при установке python3-venv"
+# Установка системных Python пакетов
+print_message "Установка системных Python пакетов..."
+apt-get update && apt-get install -y python3-rpi.gpio python3-mysql.connector python3-dotenv || {
+    print_warning "Не удалось установить системные пакеты, попробуем установить через pip"
+    pip3 install --break-system-packages RPi.GPIO mysql-connector-python python-dotenv daemonize || {
+        print_error "Не удалось установить Python зависимости"
         exit 1
     }
-fi
-
-# Создание и активация виртуального окружения
-print_message "Создание виртуального окружения..."
-python3 -m venv "$INSTALL_DIR/venv"
-
-# Активация виртуального окружения и установка зависимостей
-print_message "Установка зависимостей в виртуальное окружение..."
-if [ -f "$INSTALL_DIR/venv/bin/activate" ]; then
-    source "$INSTALL_DIR/venv/bin/activate"
-    pip install -r "$INSTALL_DIR/requirements.txt"
-    deactivate
-else
-    print_error "Не удалось создать виртуальное окружение"
-    exit 1
-fi
+}
 
 # Настройка ротации логов
 print_message "Настройка ротации логов..."
@@ -231,13 +210,7 @@ systemctl enable rfid-reader.service
 print_message "Запуск тестирования системы..."
 if [ -f "$INSTALL_DIR/test_system.py" ]; then
     cd "$INSTALL_DIR"
-    if [ -f "venv/bin/activate" ]; then
-        source venv/bin/activate
-        python3 test_system.py
-        deactivate
-    else
-        print_warning "Виртуальное окружение не найдено, пропускаем тестирование"
-    fi
+    python3 test_system.py
 else
     print_warning "Скрипт тестирования не найден"
 fi
