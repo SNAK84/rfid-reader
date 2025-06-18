@@ -1,0 +1,4 @@
+RPi.GPIO==0.7.1
+mysql-connector-python==8.0.33
+python-dotenv==1.0.0
+daemonize==2.5.0 

@@ -1,0 +1,18 @@
+[Unit]
+Description=RFID Card Reader Service
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/rfid-reader
+ExecStart=/usr/bin/python3 /opt/rfid-reader/wg_daemon.py start
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/rfid-reader/logs/wg_daemon.log
+StandardError=append:/opt/rfid-reader/logs/wg_daemon.log
+
+[Install]
+WantedBy=multi-user.target 
